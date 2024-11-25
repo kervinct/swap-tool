@@ -24,18 +24,27 @@ import (
 )
 
 var jupCmd = &cobra.Command{
-	Use:   "jupiter",
+	Use:   "jupiter [flags] privateKey inputMint outputMint amountIn",
 	Short: "swap on jupiter",
+	Args:  cobra.MatchAll(cobra.ExactArgs(4), cobra.OnlyValidArgs),
 	Run:   jupRun,
 }
 
 func jupRun(cmd *cobra.Command, args []string) {
+	/// prepare for request
+	priv := args[0]
+	from := args[1]
+	to := args[2]
+	amount, err := strconv.ParseUint(args[3], 10, 64)
+	if err != nil {
+		log.Fatalf("Invalid amount: %v", err)
+		os.Exit(1)
+	}
 	accountFrom, err := solana.PrivateKeyFromBase58(priv)
 	if err != nil {
 		log.Fatalf("Invalid private key format, should be base58 encoded string")
 		os.Exit(1)
 	}
-
 	if !checkIsValidAddress(from, to) {
 		os.Exit(1)
 	}
@@ -53,19 +62,25 @@ func jupRun(cmd *cobra.Command, args []string) {
 
 	//TODO
 	// check token account, if not existed, then create it
-	// from = solana.FindAssociatedTokenAddress(accountFrom.PublicKey(), inputMint)
-	// to = solana.FindAssociatedTokenAddress(accountFrom.PublicKey(), outputMint)
-	// Transaction.add(token.NewInitializeAccountInstruction(from, inputMint, accountFrom.PublicKey(), SysVarRentPubkey))
-	// Transaction.add(token.NewInitializeAccountInstruction(to, outputMint, accountFrom.PublicKey(), SysVarRentPubkey))
+	// from, _, err := solana.FindAssociatedTokenAddress(accountFrom.PublicKey(), inputMint)
+	// to, _, err = solana.FindAssociatedTokenAddress(accountFrom.PublicKey(), outputMint)
+	// builder := solana.NewTransactionBuilder()
+	// builder.AddInstruction(token.NewInitializeAccountInstruction(from, inputMint, accountFrom.PublicKey(), SysVarRentPubkey))
+	// builder.AddInstruction(token.NewInitializeAccountInstruction(to, outputMint, accountFrom.PublicKey(), SysVarRentPubkey))
+	// builder.SetRecentBlockHash(hash)
+	// tx, err := builder.Build()
+	// tx.Sign(accountFrom)
 
-	rpcClient := rpc.New(rpc.MainNetBeta_RPC)
+	/// 1. initialize client
+	rpcClient := rpc.New(chainRpc)
 
-	wsClient, err := ws.Connect(context.Background(), rpc.MainNetBeta_WS)
+	wsClient, err := ws.Connect(context.Background(), chainWss)
 	if err != nil {
 		log.Fatalf("Failed to connect to Solana WS endpoint: %v", err)
 		os.Exit(1)
 	}
 
+	/// 2. fetch swap transaction
 	jupQuoteResponse, swappedTokenAmount, err := fetchTransaction(
 		accountFrom.PublicKey().String(),
 		dstTokenAccount.String(),
@@ -78,6 +93,7 @@ func jupRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	/// 3. build transaction
 	swapTransaction, err := solana.TransactionFromBase64(jupQuoteResponse.Transaction)
 	if err != nil {
 		log.Fatalf("Failed to parse swap transaction: %v", err)
@@ -103,6 +119,8 @@ func jupRun(cmd *cobra.Command, args []string) {
 	}
 
 	if simulate {
+		/// 4a. simulation
+
 		simulateOpts := rpc.SimulateTransactionOpts{
 			// SigVerify:  true,  // conflicts with ReplaceRecentBlockhash
 			Commitment:             rpc.CommitmentFinalized,
@@ -126,7 +144,9 @@ func jupRun(cmd *cobra.Command, args []string) {
 		}
 		fmt.Println(sb.String())
 	} else {
-		fmt.Printf("Sending transaction and waiting for confirmed...\n\tConfirmation will break after %d seconds\n", timeout)
+		/// 4b. send transaction
+		fmt.Printf("Sending transaction and waiting for confirmed...\n\t"+
+			"Confirmation will break after %d seconds\n", timeout)
 		fmt.Printf("\tTransaction signature: %s\n", sigs[0].String())
 		sig, err := confirm.SendAndConfirmTransactionWithTimeout(
 			context.TODO(),
@@ -136,10 +156,11 @@ func jupRun(cmd *cobra.Command, args []string) {
 			time.Second*time.Duration(timeout),
 		)
 		if err != nil {
-			log.Fatalf("Failed to send and confirm the transaction\n\t[Attention]\n\tThe transaction may be confirmed or discarded, you can confirm it by hand [click](https://explorer.solana.com/tx/%s)", sig.String())
+			log.Fatalf("Failed to send and confirm the transaction\n\t"+
+				"Attention:\n\t\tThe transaction may be confirmed or discarded, "+
+				"you can confirm it by hand [click](https://explorer.solana.com/tx/%s)", sigs[0].String())
 			os.Exit(1)
 		}
-		fmt.Printf("Transaction signature: %s\nSwapped out: %d\n", sig.String(), swappedTokenAmount)
 
 		opts := rpc.GetTransactionOpts{
 			MaxSupportedTransactionVersion: &maxSupportedTransactionVersion,
@@ -258,7 +279,7 @@ func fetchTransaction(user, dstTokenAccount, inputMint, outputMint string, amoun
 
 	params, _ := query.Values(jupQuoteReq)
 	// fmt.Printf("params: %s\n", params.Encode())
-	quoteReq, err := http.NewRequest("GET", fmt.Sprintf("%s/quote?%s", swap, params.Encode()), nil)
+	quoteReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/quote?%s", swapApi, params.Encode()), nil)
 	if err != nil {
 		log.Fatalf("Failed to create request: %v", err)
 		return nil, 0, err
@@ -295,7 +316,7 @@ func fetchTransaction(user, dstTokenAccount, inputMint, outputMint string, amoun
 		return nil, 0, err
 	}
 	// fmt.Println("swap req marshalled: ", string(marshalled))
-	swapReq, err := http.NewRequest("POST", fmt.Sprintf("%s/swap", swap), bytes.NewReader(marshalled))
+	swapReq, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/swap", swapApi), bytes.NewReader(marshalled))
 	if err != nil {
 		log.Fatalf("Failed to create swap request: %v", err)
 		return nil, 0, err

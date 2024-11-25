@@ -10,7 +10,7 @@ import (
 )
 
 var solanaCmd = &cobra.Command{
-	Use:   "solana",
+	Use:   "solana [flags] privateKey signature",
 	Short: "test",
 	Args:  cobra.MatchAll(cobra.ExactArgs(2), cobra.OnlyValidArgs),
 	Run:   solanaRun,

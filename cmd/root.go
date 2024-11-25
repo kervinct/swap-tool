@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -11,17 +12,17 @@ import (
 var cfgFile string
 
 var (
-	priv        string
-	from        string
-	to          string
-	amount      uint64
 	simulate    bool
-	swap        string
+	chainRpc    string
+	chainWss    string
 	slippageBps uint16
 	timeout     uint16
 )
 
-var maxSupportedTransactionVersion uint64 = 0
+var (
+	maxSupportedTransactionVersion uint64 = 0
+	swapApi                        string = "https://quote-api.jup.ag/v6"
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "swap-tool",
@@ -40,12 +41,8 @@ func init() {
 
 	rootCmd.AddCommand(jupCmd)
 
-	jupCmd.Flags().StringVar(&priv, "priv", "", "private key")
-	jupCmd.Flags().StringVar(&from, "from", "", "token in mint address")
-	jupCmd.Flags().StringVar(&to, "to", "", "token out mint address")
-	jupCmd.Flags().Uint64Var(&amount, "amount", 0, "amount")
-	jupCmd.Flags().StringVar(&swap, "swap", "https://quote-api.jup.ag/v6", "swap contract address or entrypoint url")
-	jupCmd.MarkFlagsRequiredTogether("priv", "from", "to", "amount")
+	jupCmd.Flags().StringVar(&chainRpc, "chainRpc", rpc.MainNetBeta_RPC, "solana rpc endpoint")
+	jupCmd.Flags().StringVar(&chainWss, "chainWss", rpc.MainNetBeta_WS, "solana wss endpoint")
 	jupCmd.Flags().BoolVar(&simulate, "simulate", true, "simulate swap") // set this default to true for local test
 	jupCmd.Flags().Uint16Var(&slippageBps, "slippageBps", 50, "slippage bps")
 	jupCmd.Flags().Uint16Var(&timeout, "timeout", 30, "confirmation timeout in seconds")
