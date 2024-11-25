@@ -83,7 +83,7 @@ func jupRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	swapTransaction.Message.RecentBlockhash = recentBlockHash.Value.Blockhash
-	_, err = swapTransaction.Sign(func(key solana.PublicKey) *solana.PrivateKey {
+	sigs, err := swapTransaction.Sign(func(key solana.PublicKey) *solana.PrivateKey {
 		if accountFrom.PublicKey().Equals(key) {
 			return &accountFrom
 		}
@@ -118,8 +118,8 @@ func jupRun(cmd *cobra.Command, args []string) {
 		}
 		fmt.Println(sb.String())
 	} else {
-		fmt.Println(`Sending transaction and waiting for confirmed...
-		Confirmation will break after 30 seconds timeout`)
+		fmt.Printf("Sending transaction and waiting for confirmed...\n\tConfirmation will break after %d seconds\n", timeout)
+		fmt.Printf("\tTransaction signature: %s\n", sigs[0].String())
 		sig, err := confirm.SendAndConfirmTransactionWithTimeout(
 			context.TODO(),
 			rpcClient,
