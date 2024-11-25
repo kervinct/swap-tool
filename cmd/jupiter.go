@@ -128,7 +128,8 @@ func jupRun(cmd *cobra.Command, args []string) {
 			time.Second*time.Duration(timeout),
 		)
 		if err != nil {
-			log.Fatalf("Failed to send and confirm transaction: %v, check your network connectivity", err)
+			log.Fatalf("Failed to send and confirm the transaction\n\t[Attention]\n\tThe transaction may be confirmed or discarded, you can confirm it by hand [click](https://explorer.solana.com/tx/%s)", sig.String())
+			os.Exit(1)
 		}
 		fmt.Printf("Transaction signature: %s\nSwapped out: %d\n", sig.String(), swappedTokenAmount)
 
