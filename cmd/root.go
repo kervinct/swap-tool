@@ -49,6 +49,8 @@ func init() {
 	jupCmd.Flags().BoolVar(&simulate, "simulate", true, "simulate swap") // set this default to true for local test
 	jupCmd.Flags().Uint16Var(&slippageBps, "slippageBps", 50, "slippage bps")
 	jupCmd.Flags().Uint16Var(&timeout, "timeout", 30, "confirmation timeout in seconds")
+
+	rootCmd.AddCommand(solanaCmd)
 }
 
 func initConfig() {
