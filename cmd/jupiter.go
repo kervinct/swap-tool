@@ -132,7 +132,10 @@ func jupRun(cmd *cobra.Command, args []string) {
 		}
 		fmt.Printf("Transaction signature: %s\nSwapped out: %d\n", sig.String(), swappedTokenAmount)
 
-		txRes, err := rpcClient.GetTransaction(context.TODO(), sig, nil)
+		opts := rpc.GetTransactionOpts{
+			MaxSupportedTransactionVersion: &maxSupportedTransactionVersion,
+		}
+		txRes, err := rpcClient.GetTransaction(context.TODO(), sig, &opts)
 		if err != nil {
 			log.Fatalf("Failed to get confirmed transaction: %v", err)
 		}

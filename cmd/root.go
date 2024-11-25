@@ -20,6 +20,8 @@ var (
 	slippageBps uint16
 )
 
+var maxSupportedTransactionVersion uint64 = 0
+
 var rootCmd = &cobra.Command{
 	Use:   "swap-tool",
 	Short: "start swap on blockchain",
