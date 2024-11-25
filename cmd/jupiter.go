@@ -19,6 +19,7 @@ import (
 	"github.com/gagliardetto/solana-go/rpc/ws"
 	"github.com/google/go-querystring/query"
 	"github.com/kervinct/swap-tool/types"
+	"github.com/shopspring/decimal"
 	"github.com/spf13/cobra"
 )
 
@@ -49,6 +50,13 @@ func jupRun(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to find associated token account: %v", err)
 		os.Exit(1)
 	}
+
+	//TODO
+	// check token account, if not existed, then create it
+	// from = solana.FindAssociatedTokenAddress(accountFrom.PublicKey(), inputMint)
+	// to = solana.FindAssociatedTokenAddress(accountFrom.PublicKey(), outputMint)
+	// Transaction.add(token.NewInitializeAccountInstruction(from, inputMint, accountFrom.PublicKey(), SysVarRentPubkey))
+	// Transaction.add(token.NewInitializeAccountInstruction(to, outputMint, accountFrom.PublicKey(), SysVarRentPubkey))
 
 	rpcClient := rpc.New(rpc.MainNetBeta_RPC)
 
@@ -178,34 +186,51 @@ func TransactionToString(user solana.PublicKey, txRes *rpc.GetTransactionResult)
 	postSolBalance = txRes.Meta.PostBalances[accountIndex]
 
 	for _, postToken := range txRes.Meta.PostTokenBalances {
-		if postToken.Owner == &user {
-			tokenBalances[postToken.AccountIndex] = TokenAmount{
-				Address:              tx.Message.AccountKeys[postToken.AccountIndex],
-				AfterUiAmountString:  postToken.UiTokenAmount.UiAmountString,
-				BeforeUiAmountString: "0",
+		if *postToken.Owner == user {
+			t, ok := tokenBalances[postToken.AccountIndex]
+			if ok {
+				t.AfterUiAmountString = postToken.UiTokenAmount.UiAmountString
+				tokenBalances[postToken.AccountIndex] = t
+			} else {
+				tokenBalances[postToken.AccountIndex] = TokenAmount{
+					Address:              tx.Message.AccountKeys[postToken.AccountIndex],
+					AfterUiAmountString:  postToken.UiTokenAmount.UiAmountString,
+					BeforeUiAmountString: "0",
+				}
 			}
 		}
 	}
 
 	for _, preToken := range txRes.Meta.PreTokenBalances {
-		if preToken.Owner == &user {
-			t := tokenBalances[preToken.AccountIndex]
-			t.BeforeUiAmountString = preToken.UiTokenAmount.UiAmountString
-			tokenBalances[preToken.AccountIndex] = t
+		if *preToken.Owner == user {
+			t, ok := tokenBalances[preToken.AccountIndex]
+			if ok {
+				t.BeforeUiAmountString = preToken.UiTokenAmount.UiAmountString
+				tokenBalances[preToken.AccountIndex] = t
+			} else {
+				tokenBalances[preToken.AccountIndex] = TokenAmount{
+					Address:              tx.Message.AccountKeys[preToken.AccountIndex],
+					BeforeUiAmountString: preToken.UiTokenAmount.UiAmountString,
+					AfterUiAmountString:  "0",
+				}
+			}
 		}
 	}
 
 	var sb strings.Builder
 	sb.WriteString(
-		fmt.Sprintf("Transaction details:\n\tBefore SOL balance: %d lamports ===>  After SOL balance: %d lamports\n",
+		fmt.Sprintf("Transaction details:\n\t[Before SOL balance: %d lamports/%s SOL ===>  After SOL balance: %d lamports/%s SOL]\n",
 			preSolBalance,
+
+			decimal.NewFromUint64(preSolBalance).Div(decimal.NewFromInt(1e9)).String(),
 			postSolBalance,
+			decimal.NewFromUint64(postSolBalance).Div(decimal.NewFromInt(1e9)).String(),
 		),
 	)
 	for _, tokenInfo := range tokenBalances {
 		sb.WriteString(
 			fmt.Sprintf(
-				"\tToken address: %s >>> Before amount: %s ===> After amount: %s\n",
+				"\tToken address: %s\n\t\t[Before amount: %s ===> After amount: %s]\n",
 				tokenInfo.Address,
 				tokenInfo.BeforeUiAmountString,
 				tokenInfo.AfterUiAmountString,
