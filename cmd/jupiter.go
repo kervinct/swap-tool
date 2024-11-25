@@ -125,7 +125,7 @@ func jupRun(cmd *cobra.Command, args []string) {
 			rpcClient,
 			wsClient,
 			swapTransaction,
-			time.Second*30,
+			time.Second*time.Duration(timeout),
 		)
 		if err != nil {
 			log.Fatalf("Failed to send and confirm transaction: %v, check your network connectivity", err)

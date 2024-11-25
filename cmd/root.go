@@ -18,6 +18,7 @@ var (
 	simulate    bool
 	swap        string
 	slippageBps uint16
+	timeout     uint16
 )
 
 var maxSupportedTransactionVersion uint64 = 0
@@ -47,6 +48,7 @@ func init() {
 	jupCmd.MarkFlagsRequiredTogether("priv", "from", "to", "amount")
 	jupCmd.Flags().BoolVar(&simulate, "simulate", true, "simulate swap") // set this default to true for local test
 	jupCmd.Flags().Uint16Var(&slippageBps, "slippageBps", 50, "slippage bps")
+	jupCmd.Flags().Uint16Var(&timeout, "timeout", 30, "confirmation timeout in seconds")
 }
 
 func initConfig() {
