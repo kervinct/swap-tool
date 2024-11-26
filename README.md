@@ -67,4 +67,4 @@ go build
 
 ### i18
 
-[Chinese](https://github.com/kervinct/swap-tool/docs/README-chs.md)
+[Chinese](https://github.com/kervinct/swap-tool/blob/main/docs/README-chs.md)
