@@ -183,6 +183,7 @@ func jupRun(cmd *cobra.Command, args []string) {
 func TransactionToString(user solana.PublicKey, txRes *rpc.GetTransactionResult) string {
 	type TokenAmount struct {
 		Address              solana.PublicKey
+		Mint                 solana.PublicKey
 		BeforeUiAmountString string
 		AfterUiAmountString  string
 	}
@@ -221,6 +222,7 @@ func TransactionToString(user solana.PublicKey, txRes *rpc.GetTransactionResult)
 			} else {
 				tokenBalances[postToken.AccountIndex] = TokenAmount{
 					Address:              tx.Message.AccountKeys[postToken.AccountIndex],
+					Mint:                 postToken.Mint,
 					AfterUiAmountString:  postToken.UiTokenAmount.UiAmountString,
 					BeforeUiAmountString: "0",
 				}
@@ -237,6 +239,7 @@ func TransactionToString(user solana.PublicKey, txRes *rpc.GetTransactionResult)
 			} else {
 				tokenBalances[preToken.AccountIndex] = TokenAmount{
 					Address:              tx.Message.AccountKeys[preToken.AccountIndex],
+					Mint:                 preToken.Mint,
 					BeforeUiAmountString: preToken.UiTokenAmount.UiAmountString,
 					AfterUiAmountString:  "0",
 				}
@@ -248,7 +251,6 @@ func TransactionToString(user solana.PublicKey, txRes *rpc.GetTransactionResult)
 	sb.WriteString(
 		fmt.Sprintf("Transaction details:\n\t[Before SOL balance: %d lamports/%s SOL ===>  After SOL balance: %d lamports/%s SOL]\n",
 			preSolBalance,
-
 			decimal.NewFromUint64(preSolBalance).Div(decimal.NewFromInt(1e9)).String(),
 			postSolBalance,
 			decimal.NewFromUint64(postSolBalance).Div(decimal.NewFromInt(1e9)).String(),
@@ -257,7 +259,8 @@ func TransactionToString(user solana.PublicKey, txRes *rpc.GetTransactionResult)
 	for _, tokenInfo := range tokenBalances {
 		sb.WriteString(
 			fmt.Sprintf(
-				"\tToken address: %s\n\t\t[Before amount: %s ===> After amount: %s]\n",
+				"\tToken mint: %s\n\t\ttoken account: %s\n\t\t\t[Before amount: %s ===> After amount: %s]\n",
+				tokenInfo.Mint,
 				tokenInfo.Address,
 				tokenInfo.BeforeUiAmountString,
 				tokenInfo.AfterUiAmountString,
