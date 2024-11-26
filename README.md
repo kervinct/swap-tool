@@ -1,7 +1,15 @@
 ### Usage
 
 ```shell
-swap-tool jupiter <privKeyBase58> <inputMint> <outputMint> <amount>
+swap-tool jupiter [--flags] <privKeyBase58> <inputMint> <outputMint> <amount>
+```
+
+tips: 默认启用模拟交易模式，此模式下不会提交到链上，可通过 `--simulation=false` 关闭模拟
+
+### Compilation
+
+```shell
+go build
 ```
 
 ### 开发过程
