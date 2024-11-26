@@ -117,7 +117,6 @@ func jupRun(cmd *cobra.Command, args []string) {
 		log.Fatalln("Unable to sign transaction:", err)
 		os.Exit(1)
 	}
-	fmt.Printf("%v", swapTransaction)
 
 	if simulate {
 		/// 4a. simulation
