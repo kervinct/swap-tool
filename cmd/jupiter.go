@@ -117,6 +117,7 @@ func jupRun(cmd *cobra.Command, args []string) {
 		log.Fatalln("Unable to sign transaction:", err)
 		os.Exit(1)
 	}
+	fmt.Printf("%v", swapTransaction)
 
 	if simulate {
 		/// 4a. simulation
@@ -148,12 +149,18 @@ func jupRun(cmd *cobra.Command, args []string) {
 		fmt.Printf("Sending transaction and waiting for confirmed...\n\t"+
 			"Confirmation will break after %d seconds\n", timeout)
 		fmt.Printf("\tTransaction signature: %s\n", sigs[0].String())
-		sig, err := confirm.SendAndConfirmTransactionWithTimeout(
+		sOpts := rpc.TransactionOpts{
+			SkipPreflight:       true,
+			PreflightCommitment: rpc.CommitmentFinalized,
+		}
+		timeoutDur := time.Second * time.Duration(timeout)
+		sig, err := confirm.SendAndConfirmTransactionWithOpts(
 			context.TODO(),
 			rpcClient,
 			wsClient,
 			swapTransaction,
-			time.Second*time.Duration(timeout),
+			sOpts,
+			&timeoutDur,
 		)
 		if err != nil {
 			log.Fatalf("Failed to send and confirm the transaction\n\t"+

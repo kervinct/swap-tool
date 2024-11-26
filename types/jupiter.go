@@ -35,37 +35,39 @@ type JupQuoteResponse struct {
 }
 
 type JupSwapRequest struct {
-	UserPublicKey             string           `json:"userPublicKey"`
-	WrapAndUnwrapSol          bool             `json:"wrapAndUnwrapSol"`
-	UseSharedAccounts         bool             `json:"useSharedAccounts"`
-	FeeAccount                string           `json:"feeAccount,omitempty"`
-	TrackingAccount           string           `json:"trackingAccount"`
-	PrioritizationFeeLamports int              `json:"prioritizationFeeLamports"`
-	AsLegacyTransaction       bool             `json:"asLegacyTransaction"`
-	UseTokenLedger            bool             `json:"useTokenLedger"`
-	DestinationTokenAccount   string           `json:"destinationTokenAccount"`
-	DynamicComputeUnitLimit   bool             `json:"dynamicComputeUnitLimit"`
-	SkipUserAccountsRpcCalls  bool             `json:"skipUserAccountsRpcCalls"`
-	DynamicSlippage           DynamicSlippage  `json:"dynamicSlippage"`
-	QuoteResponse             JupQuoteResponse `json:"quoteResponse"`
+	UserPublicKey                 string `json:"userPublicKey"`
+	WrapAndUnwrapSol              bool   `json:"wrapAndUnwrapSol"`
+	UseSharedAccounts             bool   `json:"useSharedAccounts"`
+	FeeAccount                    string `json:"feeAccount,omitempty"`
+	ComputeUnitPriceMicroLamports string `json:"computeUnitPriceMicroLamports"`
+	TrackingAccount               string `json:"trackingAccount"`
+	// PrioritizationFeeLamports     int              `json:"prioritizationFeeLamports"`
+	AsLegacyTransaction      bool             `json:"asLegacyTransaction"`
+	UseTokenLedger           bool             `json:"useTokenLedger"`
+	DestinationTokenAccount  string           `json:"destinationTokenAccount"`
+	DynamicComputeUnitLimit  bool             `json:"dynamicComputeUnitLimit"`
+	SkipUserAccountsRpcCalls bool             `json:"skipUserAccountsRpcCalls"`
+	DynamicSlippage          DynamicSlippage  `json:"dynamicSlippage"`
+	QuoteResponse            JupQuoteResponse `json:"quoteResponse"`
 }
 
 func NewJupSwapRequest(userPubkey, dstTokenAccount string, quoteResponse JupQuoteResponse) JupSwapRequest {
 	// if we leave this auto(derive from quote response), then probably received 422 json parse error
 	quoteResponse.PlatformFee.Amount = "0"
 	return JupSwapRequest{
-		UserPublicKey:             userPubkey,
-		WrapAndUnwrapSol:          true,
-		UseSharedAccounts:         true,
-		TrackingAccount:           userPubkey,
-		PrioritizationFeeLamports: 0,
-		AsLegacyTransaction:       false,
-		UseTokenLedger:            false,
-		DestinationTokenAccount:   dstTokenAccount,
-		DynamicComputeUnitLimit:   true,
-		SkipUserAccountsRpcCalls:  true,
-		DynamicSlippage:           DynamicSlippage{MinBps: 50, MaxBps: 300},
-		QuoteResponse:             quoteResponse,
+		UserPublicKey:                 userPubkey,
+		WrapAndUnwrapSol:              true,
+		UseSharedAccounts:             true,
+		TrackingAccount:               userPubkey,
+		ComputeUnitPriceMicroLamports: "auto",
+		// PrioritizationFeeLamports:     0,
+		AsLegacyTransaction:      false,
+		UseTokenLedger:           false,
+		DestinationTokenAccount:  dstTokenAccount,
+		DynamicComputeUnitLimit:  true,
+		SkipUserAccountsRpcCalls: true,
+		DynamicSlippage:          DynamicSlippage{MinBps: 50, MaxBps: 300},
+		QuoteResponse:            quoteResponse,
 	}
 }
 
