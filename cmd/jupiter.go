@@ -38,12 +38,10 @@ func jupRun(cmd *cobra.Command, args []string) {
 	amount, err := strconv.ParseUint(args[3], 10, 64)
 	if err != nil {
 		log.Fatalf("Invalid amount: %v", err)
-		os.Exit(1)
 	}
 	accountFrom, err := solana.PrivateKeyFromBase58(priv)
 	if err != nil {
 		log.Fatalf("Invalid private key format, should be base58 encoded string")
-		os.Exit(1)
 	}
 	if !checkIsValidAddress(from, to) {
 		os.Exit(1)
@@ -52,7 +50,6 @@ func jupRun(cmd *cobra.Command, args []string) {
 	outputMint, err := solana.PublicKeyFromBase58(to)
 	if err != nil {
 		log.Fatalf("Invalid output mint address: %v", err)
-		os.Exit(1)
 	}
 	dstTokenAccount, _, err := solana.FindAssociatedTokenAddress(accountFrom.PublicKey(), outputMint)
 	if err != nil {
@@ -97,14 +94,12 @@ func jupRun(cmd *cobra.Command, args []string) {
 	swapTransaction, err := solana.TransactionFromBase64(jupQuoteResponse.Transaction)
 	if err != nil {
 		log.Fatalf("Failed to parse swap transaction: %v", err)
-		os.Exit(1)
 	}
 
 	// This method is only available in solana-core v1.9 or newer, <= v1.8 should use GetRecentBLockhash
 	recentBlockHash, err := rpcClient.GetLatestBlockhash(context.TODO(), rpc.CommitmentFinalized)
 	if err != nil {
 		log.Fatalf("Failed to get recent block hash: %v", err)
-		os.Exit(1)
 	}
 	swapTransaction.Message.RecentBlockhash = recentBlockHash.Value.Blockhash
 	sigs, err := swapTransaction.Sign(func(key solana.PublicKey) *solana.PrivateKey {
@@ -115,7 +110,6 @@ func jupRun(cmd *cobra.Command, args []string) {
 	})
 	if err != nil {
 		log.Fatalln("Unable to sign transaction:", err)
-		os.Exit(1)
 	}
 
 	if simulate {
@@ -129,7 +123,6 @@ func jupRun(cmd *cobra.Command, args []string) {
 		res, err := rpcClient.SimulateTransactionWithOpts(context.TODO(), swapTransaction, &simulateOpts)
 		if err != nil {
 			log.Fatalf("Failed to send simulate transaction: %v", err)
-			os.Exit(1)
 		}
 
 		var sb strings.Builder
@@ -165,7 +158,6 @@ func jupRun(cmd *cobra.Command, args []string) {
 			log.Fatalf("Failed to send and confirm the transaction\n\t"+
 				"Attention:\n\t\tThe transaction may be confirmed or discarded, "+
 				"you can confirm it by hand [click](https://explorer.solana.com/tx/%s)", sigs[0].String())
-			os.Exit(1)
 		}
 
 		opts := rpc.GetTransactionOpts{
