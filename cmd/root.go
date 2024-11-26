@@ -51,6 +51,8 @@ func init() {
 }
 
 func initConfig() {
+	//TODO
+	// read config from configuration file
 
 	viper.AutomaticEnv()
 	if err := viper.ReadInConfig(); err == nil {
