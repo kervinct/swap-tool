@@ -57,7 +57,7 @@ go build
 5. Actual development
    - command-line was built by cobra
    - manage different swap platform with subcommands
-   - Jupiter api was designed with two processes, first get the Quote, then use the Quote as part of swap request to get swap transaction, while the Quote.platformFee.amount always an empty string, which caused /swap api throws `{"error":"Failed to deserialize the JSON body into the target type"}`, force set to "0" solved
+   - Jupiter api was designed with two processes, first get the Quote, then use the Quote as part of swap request to get swap transaction, while the Quote.platformFee.amount will be an empty string in high probability, caused /swap api throws `{"error":"Failed to deserialize the JSON body into the target type"}`, force set to "0" solved
 
 ### Known issues(TBR)
 
