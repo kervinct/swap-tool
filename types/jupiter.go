@@ -34,6 +34,12 @@ type JupQuoteResponse struct {
 	TimeTaken            int         `json:"timeTaken"`
 }
 
+// {"error":"Could not find any route","errorCode":"COULD_NOT_FIND_ANY_ROUTE"}
+type JupErrorQuoteResponse struct {
+	Error     string `json:"error"`
+	ErrorCode string `json:"errorCode"`
+}
+
 type JupSwapRequest struct {
 	UserPublicKey                 string `json:"userPublicKey"`
 	WrapAndUnwrapSol              bool   `json:"wrapAndUnwrapSol"`

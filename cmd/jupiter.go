@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -282,28 +283,37 @@ func fetchTransaction(user, dstTokenAccount, inputMint, outputMint string, amoun
 	// fmt.Printf("params: %s\n", params.Encode())
 	quoteReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/quote?%s", swapApi, params.Encode()), nil)
 	if err != nil {
-		log.Fatalf("Failed to create request: %v", err)
+		log.Printf("Failed to create request: %v", err)
 		return nil, 0, err
 	}
 	quoteReq.Header.Set("Accept", "application/json")
 
 	quoteRes, err := jupClient.Do(quoteReq)
 	if err != nil {
-		log.Fatalf("Failed to send quote request: %v", err)
+		log.Printf("Failed to send quote request: %v", err)
 		return nil, 0, err
-
 	}
 	defer quoteRes.Body.Close()
 
 	quoteBody, err := io.ReadAll(quoteRes.Body)
-	if quoteRes.StatusCode != http.StatusOK {
-		log.Fatalf("Failed to get quote, response message %s", string(quoteBody))
+	if err != nil {
+		log.Printf("Failed to read quote response body: %v", err)
 		return nil, 0, err
 	}
-	if err != nil {
-		log.Fatalf("Failed to read quote response body: %v", err)
-		return nil, 0, err
-
+	switch quoteRes.StatusCode {
+	case http.StatusBadRequest:
+		var jupErrorQuoteResponse types.JupErrorQuoteResponse
+		json.Unmarshal(quoteBody, &jupErrorQuoteResponse)
+		return nil, 0, errors.New(fmt.Sprintf("Failed to get quote info due to Bad Request"+
+			"\n\terror code: %s"+
+			"\n\terror msg: %s",
+			jupErrorQuoteResponse.ErrorCode,
+			jupErrorQuoteResponse.Error))
+	case http.StatusOK:
+		break
+	default:
+		return nil, 0, errors.New(fmt.Sprintf(
+			"Failed to get quote, status: %d, response message %s", quoteRes.StatusCode, string(quoteBody)))
 	}
 
 	var jupQuoteRes types.JupQuoteResponse
@@ -313,33 +323,32 @@ func fetchTransaction(user, dstTokenAccount, inputMint, outputMint string, amoun
 
 	marshalled, err := json.Marshal(jupSwapReq)
 	if err != nil {
-		log.Fatalf("Failed to marshal swap request body: %v", err)
+		log.Printf("Failed to marshal swap request body: %v", err)
 		return nil, 0, err
 	}
 	// fmt.Println("swap req marshalled: ", string(marshalled))
 	swapReq, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/swap", swapApi), bytes.NewReader(marshalled))
 	if err != nil {
-		log.Fatalf("Failed to create swap request: %v", err)
+		log.Printf("Failed to create swap request: %v", err)
 		return nil, 0, err
-
 	}
 	swapReq.Header.Add("Accept", "application/json")
 	swapReq.Header.Add("Content-Type", "application/json")
 
 	swapRes, err := jupClient.Do(swapReq)
 	if err != nil {
-		log.Fatalf("Failed to send swap request: %v", err)
+		log.Printf("Failed to send swap request: %v", err)
 		return nil, 0, err
 	}
 	defer swapRes.Body.Close()
 
 	swapBody, err := io.ReadAll(swapRes.Body)
 	if swapRes.StatusCode != http.StatusOK {
-		log.Fatalf("Failed to get swap, status: %d, response message %s", swapRes.StatusCode, string(swapBody))
+		log.Printf("Failed to get swap, status: %d, response message %s", swapRes.StatusCode, string(swapBody))
 		return nil, 0, err
 	}
 	if err != nil {
-		log.Fatalf("Failed to read swap response body: %v", err)
+		log.Printf("Failed to read swap response body: %v", err)
 		return nil, 0, err
 	}
 	// fmt.Println("swap body: ", string(swapBody))
@@ -349,7 +358,7 @@ func fetchTransaction(user, dstTokenAccount, inputMint, outputMint string, amoun
 
 	outAmount, err := strconv.ParseInt(jupQuoteRes.OutAmount, 10, 64)
 	if err != nil {
-		log.Fatalf("Failed to parse out amount: %v", err)
+		log.Printf("Failed to parse out amount: %v", err)
 		return nil, 0, err
 	}
 
