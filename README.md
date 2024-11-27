@@ -61,7 +61,7 @@ go build
 
 ### Known issues(TBR)
 
-1. We didn't check if there is a valid swap pool for input mint pairs
+1. ~~We didn't check if there is a valid swap pool for input mint pairs~~ :white_check_mark:
 2. The swap transaction assumed token associated account is created, but we didn't handle that case yet, you can create the account with spl-token cli by hand(`spl-token create account <mint>`)
 3. We didn't request the decimal of input mint(emit one more RPC call to network caused slightly latency), the input `amount` should be the value without decimal(.eg 0.01 SOL should be pass in 10000000)
 
